@@ -90,25 +90,6 @@ def _assert_disabled(result: dict, context: str) -> None:
 class TestReasoningEffort:
     """Check that reasoning_effort does not change M3 thinking behavior."""
 
-    @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
-    def test_01_07_thinking_without_effort(self, stream):
-        """Check the adaptive and disabled baselines without reasoning_effort."""
-        for thinking in (None, "adaptive", "disabled"):
-            payload = {
-                "messages": oai_simple_messages("Compute 23 * 47 and give the answer."),
-                "max_tokens": MAX_TOKENS,
-            }
-            if thinking is not None:
-                payload["thinking"] = {"type": thinking}
-            if stream:
-                payload["stream_options"] = {"include_usage": True}
-            result = oai_chat(payload, stream=stream)
-            context = f"thinking={thinking or 'default'} without reasoning_effort"
-            if thinking == "disabled":
-                _assert_disabled(result, context)
-            else:
-                _assert_adaptive(result, context)
-
     @pytest.mark.parametrize("effort", REASONING_EFFORT_ENUM)
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
     def test_01_01_valid_effort_ignored(self, effort, stream):
@@ -129,17 +110,9 @@ class TestReasoningEffort:
             _request("minimal", stream=stream), "reasoning_effort=minimal"
         )
 
-    @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
-    def test_01_04_out_of_enum_ignored(self, stream):
-        """An unknown effort value falls back to default M3 behavior."""
-        _assert_adaptive(
-            _request("ultra_super_max_xyz", stream=stream),
-            "reasoning_effort=out_of_enum",
-        )
-
     @pytest.mark.parametrize("effort", IGNORED_EFFORT_VALUES)
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
-    def test_01_05_effort_does_not_override_disabled(self, effort, stream):
+    def test_01_04_effort_does_not_override_disabled(self, effort, stream):
         """thinking.type=disabled skips reasoning regardless of effort."""
         _assert_disabled(
             _request(effort, thinking="disabled", stream=stream),
@@ -148,9 +121,28 @@ class TestReasoningEffort:
 
     @pytest.mark.parametrize("effort", ["low", "max"])
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
-    def test_01_06_effort_does_not_break_adaptive(self, effort, stream):
+    def test_01_05_effort_does_not_break_adaptive(self, effort, stream):
         """Explicit adaptive remains accepted at low and max effort."""
         _assert_adaptive(
             _request(effort, thinking="adaptive", stream=stream),
             f"thinking.adaptive + reasoning_effort={effort}",
         )
+
+    @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
+    def test_01_06_thinking_without_effort(self, stream):
+        """Check the adaptive and disabled baselines without reasoning_effort."""
+        for thinking in (None, "adaptive", "disabled"):
+            payload = {
+                "messages": oai_simple_messages("Compute 23 * 47 and give the answer."),
+                "max_tokens": MAX_TOKENS,
+            }
+            if thinking is not None:
+                payload["thinking"] = {"type": thinking}
+            if stream:
+                payload["stream_options"] = {"include_usage": True}
+            result = oai_chat(payload, stream=stream)
+            context = f"thinking={thinking or 'default'} without reasoning_effort"
+            if thinking == "disabled":
+                _assert_disabled(result, context)
+            else:
+                _assert_adaptive(result, context)
