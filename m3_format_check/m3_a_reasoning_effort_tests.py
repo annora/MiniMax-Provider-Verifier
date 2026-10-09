@@ -7,6 +7,7 @@ from image_tools import make_png_base64
 
 
 REASONING_EFFORT_ENUM = ("low", "medium", "high", "xhigh", "max")
+MAX_COMPLETION_TOKENS = 8192
 COMPLEX_PROMPT = (
     "Let N be the number of positive divisors of 17017^17 that are "
     "congruent to 5 modulo 12. Find N modulo 1000 and explain your method."
@@ -31,7 +32,11 @@ def _reasoning_tokens(result: dict) -> int:
 
 
 def _request(prompt: str, *, stream: bool = False, **fields) -> dict:
-    payload = {"messages": oai_simple_messages(prompt), **fields}
+    payload = {
+        "messages": oai_simple_messages(prompt),
+        "max_completion_tokens": MAX_COMPLETION_TOKENS,
+        **fields,
+    }
     if stream:
         payload["stream_options"] = {"include_usage": True}
     result = oai_chat(payload, stream=stream)

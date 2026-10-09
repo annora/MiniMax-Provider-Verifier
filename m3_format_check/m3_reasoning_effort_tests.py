@@ -4,9 +4,10 @@ from helpers import *
 
 
 REASONING_EFFORT_ENUM = ("low", "medium", "high", "xhigh", "max")
+MAX_COMPLETION_TOKENS = 4096
 COMPLEX_PROMPT = (
-    "Let N be the number of positive divisors of 17017^17 that are "
-    "congruent to 5 modulo 12. Find N modulo 1000 and explain your method."
+    "How many positive divisors of 2^8 * 3^5 are divisible by 12? "
+    "Show the calculation step by step."
 )
 
 
@@ -28,7 +29,11 @@ def _reasoning_tokens(result: dict) -> int:
 
 
 def _request(prompt: str, *, stream: bool = False, **fields) -> dict:
-    payload = {"messages": oai_simple_messages(prompt), **fields}
+    payload = {
+        "messages": oai_simple_messages(prompt),
+        "max_completion_tokens": MAX_COMPLETION_TOKENS,
+        **fields,
+    }
     if stream:
         payload["stream_options"] = {"include_usage": True}
     result = oai_chat(payload, stream=stream)
@@ -104,3 +109,14 @@ class TestReasoningEffort:
         for sample in range(5):
             result = _request(prompt, thinking={"type": "adaptive"})
             _assert_usage_if_thinking(result, f"adaptive sample={sample + 1}")
+
+    @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
+    def test_01_06_reasoning_tokens_when_present(self, stream):
+        """实际返回思考内容时，reasoning_tokens 必须存在且大于 0。"""
+        result = _request(COMPLEX_PROMPT, stream=stream,
+                          thinking={"type": "adaptive"})
+        if not get_thinking_signals(result)["any"]:
+            pytest.skip("本次没有可见思考，无法判定计数")
+        assert _reasoning_tokens(result) > 0, (
+            f"stream={stream}: 有思考内容，但 reasoning_tokens 缺失或为 0"
+        )
