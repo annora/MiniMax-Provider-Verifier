@@ -78,8 +78,8 @@ class TestReasoningEffort:
 
     @pytest.mark.parametrize("effort", REASONING_EFFORT_ENUM)
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
-    def test_01_03_reasoning_effort_ignored(self, effort, stream):
-        """M3 忽略合法 effort 值；请求应正常完成。"""
+    def test_01_03_valid_reasoning_effort_accepted(self, effort, stream):
+        """合法 effort 值应被接受；有思考时校验 token 计数。"""
         result = _request(COMPLEX_PROMPT, stream=stream, reasoning_effort=effort)
         _assert_usage_if_thinking(result, f"effort={effort}, stream={stream}")
 

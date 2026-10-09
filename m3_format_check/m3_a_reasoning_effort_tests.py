@@ -105,7 +105,9 @@ class TestReasoningEffort:
         signals = get_thinking_signals(result)
         if not signals["any"]:
             pytest.skip("adaptive 本次未返回可见思考，无法校验字段位置")
-        assert signals["reasoning_content"].strip(), (
+        message = result["body"]["choices"][0]["message"]
+        reasoning_content = message.get("reasoning_content")
+        assert isinstance(reasoning_content, str) and reasoning_content.strip(), (
             "有思考内容，但 reasoning_content 为空"
         )
         _assert_usage_if_thinking(result, "reasoning_content placement")
