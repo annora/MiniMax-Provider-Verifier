@@ -1,10 +1,3 @@
-"""MiniMax-M3 的 reasoning_effort 与 thinking 行为校验。
-
-运行前将 M3_MODEL 指向待测 M3 模型。仅校验已明确的 M3 规则：
-默认/显式 adaptive、单独 disabled，以及合法 reasoning_effort 被忽略。
-adaptive 会按题目决定是否返回可见思考，不能将每次不思考判为失败。
-"""
-
 import pytest
 
 from helpers import *

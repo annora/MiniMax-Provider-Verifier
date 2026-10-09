@@ -1,10 +1,3 @@
-"""M3.1 Chat Completions 的 reasoning_effort 与 thinking 行为校验。
-
-运行前将 M3_MODEL 指向待测 M3.1 模型。供应商验收口径中，
-thinking.type=disabled 应正常响应且不返回思考内容；此项与当前公开文档
-所写的 HTTP 400 不同，按业务要求校验。adaptive 允许按题目跳过思考。
-"""
-
 from statistics import median
 
 import pytest
