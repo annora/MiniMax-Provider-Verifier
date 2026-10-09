@@ -16,11 +16,11 @@ COMPLEX_PROMPT = (
 def _reasoning_tokens(result: dict) -> int:
     """读取非流式或流式 usage 中的推理 token 数；缺失视为 0。"""
     if result.get("stream"):
-        usage = next(
-            (chunk["usage"] for chunk in reversed(result.get("chunks") or [])
-             if isinstance(chunk, dict) and chunk.get("usage")),
-            {},
-        )
+        usage = {}
+        for chunk in reversed(result.get("chunks") or []):
+            if isinstance(chunk, dict) and chunk.get("usage"):
+                usage = chunk["usage"]
+                break
     else:
         usage = (result.get("body") or {}).get("usage") or {}
     details = usage.get("completion_tokens_details") or {}
@@ -60,6 +60,10 @@ def _assert_disabled(result: dict, context: str) -> None:
         f"实际为 {_reasoning_tokens(result)}"
     )
 
+
+# ============================================================
+# 01 reasoning_effort — M3.1 thinking 与推理 token
+# ============================================================
 
 class TestReasoningEffort:
     @pytest.mark.parametrize("effort", REASONING_EFFORT_ENUM)
@@ -178,6 +182,7 @@ class TestReasoningEffort:
         result = _request(prompt, stream=stream, thinking={"type": "disabled"})
         _assert_disabled(result, f"disabled prompt={prompt[:12]}, stream={stream}")
 
+    @pytest.mark.slow
     def test_01_14_effort_depth_repeated(self):
         """同题重复比较：max 的思考 token 中位数应高于 low。"""
         lengths = {"low": [], "max": []}
@@ -193,6 +198,7 @@ class TestReasoningEffort:
         )
 
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
+    @pytest.mark.slow
     def test_01_15_disabled_repeated(self, stream):
         """复杂题重复采样，检查 disabled 是否偶发返回推理。"""
         for sample in range(5):

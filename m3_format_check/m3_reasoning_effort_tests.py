@@ -13,11 +13,11 @@ COMPLEX_PROMPT = (
 def _reasoning_tokens(result: dict) -> int:
     """缺失的 reasoning_tokens 视为 0。"""
     if result.get("stream"):
-        usage = next(
-            (chunk["usage"] for chunk in reversed(result.get("chunks") or [])
-             if isinstance(chunk, dict) and chunk.get("usage")),
-            {},
-        )
+        usage = {}
+        for chunk in reversed(result.get("chunks") or []):
+            if isinstance(chunk, dict) and chunk.get("usage"):
+                usage = chunk["usage"]
+                break
     else:
         usage = (result.get("body") or {}).get("usage") or {}
     details = usage.get("completion_tokens_details") or {}
@@ -56,6 +56,10 @@ def _assert_disabled(result: dict, context: str) -> None:
     )
 
 
+# ============================================================
+# 01 reasoning_effort — M3 thinking 与推理 token
+# ============================================================
+
 class TestReasoningEffort:
     @pytest.mark.parametrize("thinking", [None, {"type": "adaptive"}],
                              ids=["default", "adaptive"])
@@ -84,6 +88,7 @@ class TestReasoningEffort:
         _assert_usage_if_thinking(result, f"effort={effort}, stream={stream}")
 
     @pytest.mark.parametrize("stream", [False, True], ids=["non_stream", "stream"])
+    @pytest.mark.slow
     def test_01_04_disabled_repeated(self, stream):
         """复杂题重复采样，检查 disabled 是否偶发泄露思考。"""
         for sample in range(5):
@@ -93,6 +98,7 @@ class TestReasoningEffort:
 
     @pytest.mark.parametrize("prompt", ["Say hello.", COMPLEX_PROMPT],
                              ids=["short", "complex"])
+    @pytest.mark.slow
     def test_01_05_adaptive_repeated(self, prompt):
         """adaptive 重复采样，只检查实际返回的推理与 token 是否对应。"""
         for sample in range(5):
